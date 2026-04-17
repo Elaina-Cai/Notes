@@ -72,3 +72,42 @@ Redisson 的方案：
 方式							看门狗			说明
 lock()							✅ 启用		自动续期，适合业务时间不确定的场景
 lock(10, TimeUnit.SECONDS)		❌ 禁用		固定租期，到期自动释放
+
+http请求：请求行{请求方法，请求路径，请求协议}
+          请求头(Headers){请求参数，cookie{SessionId}}
+SesisonId与jwt令牌的原理其实差不多，但是jwt更安全，因为
+用户登录 → 服务端验证 → 创建Session，生成SessionId和Session，SessionId : Session 存在后端内存上，SessionId存入Cookie
+         → 通过响应把Cokie返回给浏览器 → 浏览器存 Cookie
+         → 后续请求带 Cookie（关键是Cookie里面的SessionId） → 服务端通过 SessionId 找到用户数据
+Session vs JWT 对比
+相同点
+- 都是用来标识用户身份的凭证
+不同点
+ 	Session
+存储位置	服务端（内存/Redis/数据库）
+状态	有状态（服务端存数据）
+依赖	依赖 Cookie 或 Session 存储
+扩展性	集群需共享 Session
+---
+## 为什么 JWT 更好
+### 1. 适合分布式/微服务
+- Session 需要共享（Redis），JWT 只需验证签名
+- 不需要统一的 Session 存储
+### 2. 跨域支持
+- JWT 可以存 LocalStorage，跨域请求也能带
+- Session 依赖 Cookie，受同源策略限制
+### 3. 减轻服务端压力
+- JWT 不需要服务端存储
+- 验证签名即可，不需要查表
+### 4. 适合前后端分离
+- 移动端、小程序都能方便使用
+---
+JWT 的缺点
+- 无法失效：签发后无法主动撤销（需要黑名单或短期过期）
+- 数据量大：Payload 越大，Token 越长
+- 无服务端存储：无法强制登出（除非改服务端逻辑）
+区别只是存哪：
+Session	服务端存数据，客户端存 SessionId
+JWT	客户端存完整数据
+---
+本质上都是：服务端通过某种凭证识别用户是谁。
